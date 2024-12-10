@@ -216,15 +216,6 @@ def get_cosine_and_fp64_outputs(model, args, kwargs):
     return cosine, fp64_outputs
 
 
-def export_aot_inductor(model, example_args, example_kwargs, device):
-    with torch.no_grad():
-        so_path = torch._export.aot_compile(
-            model, tuple(example_args), example_kwargs
-        )
-
-    return torch._export.aot_load(so_path, device=device)
-
-
 DYNAMO_TOL = 1e-4
 INDUCTOR_TOL = 1e-3
 

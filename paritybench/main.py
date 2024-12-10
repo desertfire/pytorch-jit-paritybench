@@ -47,7 +47,7 @@ def get_args(raw_args=None):
     parser.add_argument("--limit", "-l", type=int, help="only run the first N files")
     parser.add_argument("--filter", "-f", "-k", help="only run module containing given name")
     parser.add_argument("--no-fork", action="store_true", help="don't run *-one test in a subprocess")
-    parser.add_argument("--memory-limit-gb", type=int, default=10)
+    parser.add_argument("--memory-limit-gb", type=int, default=32)
 
     parser.add_argument("--onnxdir", type=str, help="dir where to export modules to onnx during evaluate")
     parser.add_argument("--fullgraph", default=False, action="store_true", help="use fullgraph(no python fall back) when compiling with dynamo")

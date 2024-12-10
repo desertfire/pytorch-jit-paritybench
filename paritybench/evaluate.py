@@ -14,11 +14,10 @@ import torch._inductor
 from torch.testing._internal.jit_utils import JitTestCase
 from torch._decomp import core_aten_decompositions
 from torch._dynamo.testing import same
-from torch._export import ExportDynamoConfig
 
 from paritybench.reporting import ErrorAggregatorDict, Stats
 from paritybench.utils import import_file, get_skiplist, get_cosine_and_fp64_outputs, get_tol, \
-    patch_torch_manual_seed, reset_rng_state, subproc_wrapper, wrap_args, wrap_kwargs, export_aot_inductor
+    patch_torch_manual_seed, reset_rng_state, subproc_wrapper, wrap_args, wrap_kwargs
 
 
 log = logging.getLogger(__name__)
@@ -130,23 +129,23 @@ def evaluate_nn_module(nn_cls, get_init_args, get_forward_args, record_error, ma
                 )(nn)
                 result3 = compiled_model(*args, **kwargs)
             elif main_args.compile_mode == 'export':
-                DECOMP_TABLE = core_aten_decompositions()
-
-                with torch._dynamo.config.patch(dataclasses.asdict(ExportDynamoConfig())):
-                    exported_model, _ = torch._dynamo.export(
-                        nn,
-                        *args,
-                        aten_graph=True,
-                        tracing_mode="symbolic",
-                        decomposition_table=DECOMP_TABLE,
-                        constraints=None,
-                        assume_static_by_default=True,
-                        **kwargs
-                    )
-                    result3 = exported_model(*args, **kwargs)
+                exported_model = torch.export.export(
+                    nn,
+                    tuple(args),
+                    kwargs,
+                    strict=False,
+                ).module()
+                result3 = exported_model(*args, **kwargs)
             elif main_args.compile_mode == 'aot_inductor':
-                compiled_model = export_aot_inductor(nn, args, kwargs, device.type)
-                result3 = compiled_model(args, kwargs)
+                ep = torch.export.export(
+                    nn,
+                    tuple(args),
+                    kwargs,
+                    strict=False,
+                )
+                ap = torch._inductor.aoti_compile_and_package(ep)
+                compiled_model = torch._inductor.aoti_load_package(ap)
+                result3 = compiled_model(*args, **kwargs)
             else:
                 raise AssertionError("Invalid compile_mode")
 
